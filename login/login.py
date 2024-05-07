@@ -33,5 +33,7 @@ def userLogin():
 
     # 获取查询结果
     res = cursor.fetchall()
+    cursor.close()
+    connection.close()
     return jsonify(res)
 

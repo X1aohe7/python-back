@@ -30,6 +30,8 @@ def getItems():
 
     # 获取查询结果
     res = cursor.fetchall()
+    cursor.close()
+    connection.close()
     return jsonify(res)
 
 
@@ -47,7 +49,8 @@ def createItem():
     sql_query = "INSERT INTO item (userId,itemName, description, price) VALUES (%s,%s, %s, %s)"
     cursor.execute(sql_query, (userId, itemName, description, price))
     connection.commit()  # 提交事务
-
+    cursor.close()
+    connection.close()
     return jsonify({"message": "Item created successfully"})
 
 @business.route('/business/changeStatus',methods=['POST'])
@@ -64,7 +67,8 @@ def changeStatus():
     sql_query = "UPDATE item SET status=%s where userId=%s and itemId=%s"
     cursor.execute(sql_query, (status, userId, itemId,))
     connection.commit()  # 提交事务
-
+    cursor.close()
+    connection.close()
     return jsonify({"message": "Item changed successfully"})
 
 @business.route('/business/deleteItem',methods=['POST'])
@@ -79,5 +83,6 @@ def deleteItem():
     cursor.execute(sql_query, (userId,itemId))
     connection.commit()  # 提交事务
     # 获取查询结果
-
+    cursor.close()
+    connection.close()
     return jsonify({"message": "Item deleted successfully"})

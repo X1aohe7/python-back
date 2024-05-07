@@ -25,7 +25,7 @@ def getItems():
     connection = get_db_connection()
     cursor = connection.cursor(dictionary=True)
     # 构建 SQL 查询语句
-    sql_query = "SELECT * FROM item WHERE userId=%s"
+    sql_query = "SELECT * FROM item WHERE userId=%s and isDeleted=0"
     cursor.execute(sql_query, (userId,))
 
     # 获取查询结果
@@ -66,3 +66,18 @@ def changeStatus():
     connection.commit()  # 提交事务
 
     return jsonify({"message": "Item changed successfully"})
+
+@business.route('/business/deleteItem',methods=['POST'])
+def deleteItem():
+    userId = request.form.get('userId', type=int)
+    itemId = request.form.get('itemId', type=int)
+
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+    # 构建 SQL 查询语句
+    sql_query = "UPDATE item SET isDeleted=1 where userId=%s and itemId=%s"
+    cursor.execute(sql_query, (userId,itemId))
+    connection.commit()  # 提交事务
+    # 获取查询结果
+
+    return jsonify({"message": "Item deleted successfully"})

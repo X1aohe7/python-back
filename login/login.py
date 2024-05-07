@@ -21,14 +21,14 @@ def get_db_connection():
 
 #医生登录
 @login.route('/login',methods=['POST'])
-def doctorLogin():
+def userLogin():
     username = request.form['username']
     password = request.form['password']
 
     connection = get_db_connection()
     cursor = connection.cursor(dictionary=True)
     # 构建 SQL 查询语句
-    sql_query = "SELECT user.username,user.userType FROM user WHERE username=%s and password=%s"
+    sql_query = "SELECT user.userId,user.username,user.userType FROM user WHERE username=%s and password=%s"
     cursor.execute(sql_query, (username,password))
 
     # 获取查询结果

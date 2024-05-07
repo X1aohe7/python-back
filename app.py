@@ -1,9 +1,12 @@
 from flask import Flask
 from login.login import login
+from business.business import business
 
 app = Flask(__name__)
 
 app.register_blueprint(login)
+app.register_blueprint(business)
+
 
 # 添加header解决跨域
 @app.after_request

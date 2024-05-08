@@ -79,11 +79,13 @@ def getOrder():
     cursor.close()
     connection.close()
     return jsonify(res=res,orderId=orderId)
+
 @customer.route('/customer/changeQuantity',methods=['POST'])
 def changeQuantity():
     orderId = request.form.get('orderId', type=int)
     itemId = request.form.get('itemId', type=int)
     quantity = request.form.get('quantity', type=int)
+    price = request.form.get('price', type=float)
     # print(userId)
     connection = get_db_connection()
     cursor = connection.cursor(dictionary=True)
@@ -98,12 +100,35 @@ def changeQuantity():
         sql_query2 = "insert into orderDetail (orderId,itemId,quantity) values (%s,%s,1)"
         cursor.execute(sql_query2, (orderId, itemId))
         connection.commit()
-
+        oldQuantity=0
     else:
+        sql_query4 = "select quantity from orderDetail where orderId=%s and itemId=%s"
+        cursor.execute(sql_query4, (orderId,itemId))
+        res = cursor.fetchall()
+        oldQuantity=res[0].get("quantity")
         sql_query3 = "UPDATE orderDetail SET quantity = %s WHERE orderId = %s AND itemId = %s"
-        cursor.execute(sql_query3, (quantity,orderId, itemId))
-        connection.commit()
+        cursor.execute(sql_query3, (quantity, orderId, itemId))
+
+    sql_query5=  "UPDATE orders SET totalPrice = totalPrice+%s WHERE orderId = %s"
+    change=(quantity-oldQuantity)*price
+    cursor.execute(sql_query5, (change,orderId))
+    connection.commit()
+
+
+
     cursor.close()
     connection.close()
     return jsonify("item added successfully")
 
+@customer.route('/customer/getOrderList',methods=['GET'])
+def getOrderList():
+    customerId = request.args.get('customerId', type=int)
+    # print(userId)
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+    # 构建 SQL 查询语句
+    sql_query1 = "select orders.*,user.shopName from orders,user where orders.businessId=user.userId and customerId=%s"
+    cursor.execute(sql_query1, (customerId,))
+    # 获取查询结果
+    res = cursor.fetchall()
+    return jsonify(res)

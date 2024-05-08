@@ -19,7 +19,7 @@ def get_db_connection():
     )
     return db_connection
 
-#医生登录
+#用户登录
 @login.route('/login',methods=['POST'])
 def userLogin():
     username = request.form['username']
@@ -28,7 +28,7 @@ def userLogin():
     connection = get_db_connection()
     cursor = connection.cursor(dictionary=True)
     # 构建 SQL 查询语句
-    sql_query = "SELECT user.userId,user.username,user.userType FROM user WHERE username=%s and password=%s"
+    sql_query = "SELECT user.userId,user.username,user.userType,user.shopName,user.customerName FROM user WHERE username=%s and password=%s"
     cursor.execute(sql_query, (username,password))
 
     # 获取查询结果

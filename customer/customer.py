@@ -1,22 +1,10 @@
 from flask import Blueprint, jsonify
 from flask import request  # 添加这一行来引入 request 模块
-
+from db.db import get_db_connection # 获取数据库连接
 import mysql.connector
 
 customer = Blueprint('customer', __name__)
 
-#获取数据库连接
-def get_db_connection():
-
-    # 如果连接不存在，则创建一个新的连接
-
-    db_connection = mysql.connector.connect(
-            host="47.108.105.205",
-            user="root",
-            password="root",
-            database="flask"
-    )
-    return db_connection
 
 @customer.route('/customer/getAllShop',methods=['GET'])
 def getAllShop():
@@ -131,4 +119,25 @@ def getOrderList():
     cursor.execute(sql_query1, (customerId,))
     # 获取查询结果
     res = cursor.fetchall()
+    cursor.close()
+    connection.close()
     return jsonify(res)
+
+@customer.route('/customer/getOrderDetail',methods=['GET'])
+def getOrderDetail():
+    # customerId = request.args.get('customerId', type=int)
+    orderId = request.args.get('orderId', type=int)
+    # print(request.values)
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+    # 构建 SQL 查询语句
+    sql_query1 = "select * from orderDetail,item where orderDetail.itemId=item.itemId and orderDetail.orderId=%s"
+    sql_query2 = "select * from orders where orders.orderId=%s"
+    cursor.execute(sql_query1, (orderId,))
+    # 获取查询结果
+    res = cursor.fetchall()
+    cursor.execute(sql_query2, (orderId,))
+    order = cursor.fetchall()
+    cursor.close()
+    connection.close()
+    return jsonify(orderDetail=res,order=order)

@@ -46,7 +46,7 @@ def getOrder():
     connection = get_db_connection()
     cursor = connection.cursor(dictionary=True)
     # 构建 SQL 查询语句
-    sql_query1 = "select * from orders where customerId=%s and businessId=%s"
+    sql_query1 = "select * from orders where customerId=%s and businessId=%s and customerStatus=0"
     cursor.execute(sql_query1, (customerId,businessId))
 
     # 获取查询结果
@@ -141,3 +141,27 @@ def getOrderDetail():
     cursor.close()
     connection.close()
     return jsonify(orderDetail=res,order=order)
+
+@customer.route('/customer/pay',methods=['POST'])
+def pay():
+    orderId = request.form.get('orderId', type=int)
+    # print(userId)
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+    # 构建 SQL 查询语句
+    sql_query1 = "update orders set customerStatus=1 where orderId=%s"
+    cursor.execute(sql_query1, (orderId,))
+    connection.commit()
+    return jsonify("pay successfully")
+
+@customer.route('/customer/cancel',methods=['POST'])
+def cancel():
+    orderId = request.form.get('orderId', type=int)
+    # print(userId)
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+    # 构建 SQL 查询语句
+    sql_query1 = "update orders set customerStatus=2 where orderId=%s"
+    cursor.execute(sql_query1, (orderId,))
+    connection.commit()
+    return jsonify("canceled successfully")

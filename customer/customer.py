@@ -161,7 +161,7 @@ def cancel():
     connection = get_db_connection()
     cursor = connection.cursor(dictionary=True)
     # 构建 SQL 查询语句
-    sql_query1 = "update orders set customerStatus=2 where orderId=%s"
+    sql_query1 = "update orders set customerStatus=3 where orderId=%s"
     cursor.execute(sql_query1, (orderId,))
     connection.commit()
     return jsonify("canceled successfully")

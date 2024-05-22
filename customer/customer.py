@@ -152,6 +152,8 @@ def pay():
     sql_query1 = "update orders set customerStatus=1 where orderId=%s"
     cursor.execute(sql_query1, (orderId,))
     connection.commit()
+    cursor.close()
+    connection.close()
     return jsonify("pay successfully")
 
 @customer.route('/customer/cancel',methods=['POST'])
@@ -164,4 +166,69 @@ def cancel():
     sql_query1 = "update orders set customerStatus=3 where orderId=%s"
     cursor.execute(sql_query1, (orderId,))
     connection.commit()
+    cursor.close()
+    connection.close()
     return jsonify("canceled successfully")
+
+
+@customer.route('/customer/searchBusiness',methods=['GET'])
+def searchBusiness():
+    key = request.args.get('key', type=str)
+    # print(userId)
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+    # 构建 SQL 查询语句
+    sql_query = "SELECT userId, shopName FROM user WHERE userType=1 AND shopName LIKE %s"
+    like_key = f"%{key}%"  # 模糊匹配关键字
+
+    cursor.execute(sql_query, (like_key,))
+    results = cursor.fetchall()
+
+    cursor.close()
+    connection.close()
+
+    # 将结果以 JSON 格式返回
+    return jsonify(results)
+
+@customer.route('/customer/updateCustomerInfo',methods=['POST'])
+def updateCustomerInfo():
+    userId = request.form.get('userId', type=int)
+    customerName = request.form.get('customerName', type=str)
+    avatar = request.form.get('avatar', type=str)
+    print(userId,customerName,avatar)
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+    # 构建 SQL 查询语句
+    sql_query = "update user set customerName=%s,avatar=%s where userId=%s"
+    cursor.execute(sql_query, (customerName,avatar,userId))
+    connection.commit()
+    cursor.close()
+    connection.close()
+
+    # 将结果以 JSON 格式返回
+    return jsonify("update successfully")
+
+@customer.route('/customer/updatePassword',methods=['POST'])
+def updatePassword():
+    userId = request.form.get('userId', type=int)
+    oldPassword = request.form.get('oldPassword', type=str)
+    newPassword = request.form.get('newPassword', type=str)
+    print(userId)
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+    sql="select password from user where userId=%s"
+    cursor.execute(sql, (userId,))
+    results = cursor.fetchall()
+    # print(results)
+    password=results[0].get("password")
+    if(oldPassword != password):
+        return jsonify({'error': '旧密码不正确'}), 400
+    # 构建 SQL 查询语句
+    sql_query = "update user set password=%s where userId=%s"
+    cursor.execute(sql_query, (newPassword,userId))
+    connection.commit()
+    cursor.close()
+    connection.close()
+
+    # 将结果以 JSON 格式返回
+    return jsonify("update successfully")

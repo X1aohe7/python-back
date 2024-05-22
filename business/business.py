@@ -135,3 +135,46 @@ def refund():
     cursor.execute(sql_query1, (orderId,))
     connection.commit()
     return jsonify("canceled successfully")
+
+@business.route('/business/updateBusinessInfo',methods=['POST'])
+def updateBusinessInfo():
+    userId = request.form.get('userId', type=int)
+    shopName = request.form.get('shopName', type=str)
+    avatar = request.form.get('avatar', type=str)
+    # print(userId,shopName,avatar)
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+    # 构建 SQL 查询语句
+    sql_query = "update user set shopName=%s,avatar=%s where userId=%s"
+    cursor.execute(sql_query, (shopName,avatar,userId))
+    connection.commit()
+    cursor.close()
+    connection.close()
+
+    # 将结果以 JSON 格式返回
+    return jsonify("update successfully")
+
+@business.route('/business/updatePassword',methods=['POST'])
+def updatePassword():
+    userId = request.form.get('userId', type=int)
+    oldPassword = request.form.get('oldPassword', type=str)
+    newPassword = request.form.get('newPassword', type=str)
+    print(userId)
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+    sql="select password from user where userId=%s"
+    cursor.execute(sql, (userId,))
+    results = cursor.fetchall()
+    # print(results)
+    password=results[0].get("password")
+    if(oldPassword != password):
+        return jsonify({'error': '旧密码不正确'}), 400
+    # 构建 SQL 查询语句
+    sql_query = "update user set password=%s where userId=%s"
+    cursor.execute(sql_query, (newPassword,userId))
+    connection.commit()
+    cursor.close()
+    connection.close()
+
+    # 将结果以 JSON 格式返回
+    return jsonify("update successfully")

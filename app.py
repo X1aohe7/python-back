@@ -2,12 +2,13 @@ from flask import Flask
 from login.login import login
 from business.business import business
 from customer.customer import customer
-
+from AI.AI import AI
 app = Flask(__name__)
 
 app.register_blueprint(login)
 app.register_blueprint(business)
 app.register_blueprint(customer)
+app.register_blueprint(AI)
 
 
 # 添加header解决跨域

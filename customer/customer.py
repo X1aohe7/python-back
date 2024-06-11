@@ -195,7 +195,7 @@ def updateCustomerInfo():
     userId = request.form.get('userId', type=int)
     customerName = request.form.get('customerName', type=str)
     avatar = request.form.get('avatar', type=str)
-    print(userId,customerName,avatar)
+    # print(userId,customerName,avatar)
     connection = get_db_connection()
     cursor = connection.cursor(dictionary=True)
     # 构建 SQL 查询语句

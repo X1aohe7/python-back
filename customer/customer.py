@@ -115,7 +115,8 @@ def getOrderList():
     connection = get_db_connection()
     cursor = connection.cursor(dictionary=True)
     # 构建 SQL 查询语句
-    sql_query1 = "select orders.*,user.shopName from orders,user where orders.businessId=user.userId and customerId=%s"
+    print('1')
+    sql_query1 = "select orders.*,user.shopName from orders,user where orders.businessId=user.userId and customerId=%s and totalPrice!=0"
     cursor.execute(sql_query1, (customerId,))
     # 获取查询结果
     res = cursor.fetchall()

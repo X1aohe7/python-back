@@ -31,12 +31,13 @@ def createItem():
     itemName = request.form['itemName']
     description = request.form['description']
     price = request.form['price']
+    avatar = request.form['avatar']
     # print(request.form.get("itemName"))
     connection = get_db_connection()
     cursor = connection.cursor(dictionary=True)
     # # 构建 SQL 查询语句
-    sql_query = "INSERT INTO item (userId,itemName, description, price) VALUES (%s,%s, %s, %s)"
-    cursor.execute(sql_query, (userId, itemName, description, price))
+    sql_query = "INSERT INTO item (userId,itemName, description, price,avatar) VALUES (%s,%s, %s, %s,%s)"
+    cursor.execute(sql_query, (userId, itemName, description, price,avatar))
     connection.commit()  # 提交事务
     cursor.close()
     connection.close()

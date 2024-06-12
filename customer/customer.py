@@ -13,7 +13,7 @@ def getAllShop():
     connection = get_db_connection()
     cursor = connection.cursor(dictionary=True)
     # 构建 SQL 查询语句
-    sql_query = "SELECT user.userId,user.shopName FROM user WHERE userType=1"
+    sql_query = "SELECT user.userId,user.shopName,user.avatar FROM user WHERE userType=1"
     cursor.execute(sql_query)
 
     # 获取查询结果

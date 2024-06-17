@@ -86,7 +86,7 @@ def getOrderList():
     # 构建 SQL 查询语句
     sql_query1 = "select orders.* from orders where businessId=%s"
     sql_query1 = "select orders.*,user.customerName,user.userId from orders,user" \
-                 " where orders.customerId=user.userId and businessId=%s and customerStatus!=0 and customerStatus!=3"
+                 " where orders.customerId=user.userId and businessId=%s and customerStatus!=0 and customerStatus!=3 and totalPrice!=0"
     cursor.execute(sql_query1, (businessId,))
     # 获取查询结果
     res = cursor.fetchall()

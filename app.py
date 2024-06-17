@@ -1,11 +1,15 @@
 from flask import Flask
 from login.login import login
+from login.customerRegister import customerRegister
+from login.businessRegister import businessRegister
 from business.business import business
 from customer.customer import customer
 from AI.AI import AI
 app = Flask(__name__)
 
 app.register_blueprint(login)
+app.register_blueprint(customerRegister)
+app.register_blueprint(businessRegister)
 app.register_blueprint(business)
 app.register_blueprint(customer)
 app.register_blueprint(AI)

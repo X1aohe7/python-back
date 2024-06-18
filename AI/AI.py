@@ -10,7 +10,7 @@ AI = Blueprint('AI', __name__)
 @AI.route('/AITalk',methods=['POST'])
 def AITalk():
     user_input = request.form.get('user_input', type=str)
-    client = ZhipuAI(api_key="cb2e7c320a1cd6e7d3936f5c9ef73eff.69VRzkYzQAmbZ4ez")  # 填写您自己的APIKey
+    client = ZhipuAI(api_key="f779df436dfc7fe987118c1112e12152.bKpyMkTCSJAsT3m3")  # 填写您自己的APIKey
     conversation = []  # 用于保存对话上下文的列表
     conversation.append({"role": "user", "content": user_input})  # 将用户输入添加到对话上下文中
     response = client.chat.completions.create(

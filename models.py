@@ -52,3 +52,22 @@ class OrderDetail(db.Model):
     orderId = db.Column(db.Integer, db.ForeignKey('orders.orderId'), primary_key=True)
     itemId = db.Column(db.Integer, db.ForeignKey('item.itemId'), primary_key=True)
     quantity = db.Column(db.Integer)
+
+class Cart(db.Model):
+    __tablename__ = 'cart'
+    cartId = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    itemId = db.Column(db.Integer, db.ForeignKey('item.itemId'), nullable=False)
+    businessId = db.Column(db.Integer, db.ForeignKey('user.userId'), nullable=False)
+    customerId = db.Column(db.Integer, db.ForeignKey('user.userId'), nullable=False)
+    quantity = db.Column(db.Integer)
+
+    # 一个购物车项属于一个商品
+    item = db.relationship('Item', backref=db.backref('carts', lazy=True))
+
+    # 一个购物车项属于一个商家
+    business = db.relationship('User', foreign_keys=[businessId],
+                               backref=db.backref('business_carts', lazy=True))
+
+    # 一个购物车项属于一个顾客
+    customer = db.relationship('User', foreign_keys=[customerId],
+                               backref=db.backref('customer_carts', lazy=True))

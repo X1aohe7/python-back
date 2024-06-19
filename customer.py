@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from models import db, Item, OrderDetail, Orders, User
+from models import db, Item, OrderDetail, Orders, User, Cart
 
 customer = Blueprint('customer', __name__)
 
@@ -43,27 +43,113 @@ def getOrder():
 
 @customer.route('/customer/changeQuantity', methods=['POST'])
 def changeQuantity():
-    orderId = request.form.get('orderId', type=int)
+    # orderId = request.form.get('orderId', type=int)
+    customerId = request.form.get('customerId', type=int)
+    businessId = request.form.get('businessId', type=int)
     itemId = request.form.get('itemId', type=int)
     quantity = request.form.get('quantity', type=int)
-    price = request.form.get('price', type=float)
+    print(request.form)
+    # Validate input
+    if customerId is None or businessId is None or itemId is None or quantity is None:
+        return jsonify({'message': 'Missing or invalid input'}), 400
 
-    order_detail = OrderDetail.query.filter_by(orderId=orderId, itemId=itemId).first()
-    oldQuantity = order_detail.quantity if order_detail else 0
+    # 查找购物车中的项
+    cart_item = Cart.query.filter_by(customerId=customerId, businessId=businessId, itemId=itemId).first()
 
-    if order_detail:
-        order_detail.quantity = quantity
-    else:
-        order_detail = OrderDetail(orderId=orderId, itemId=itemId, quantity=quantity)
-        db.session.add(order_detail)
+    if quantity > 0:
+        # 如果数量大于0，更新购物车或创建新的购物车项
+        if cart_item:
+            cart_item.quantity = quantity
+        else:
+            cart_item = Cart(customerId=customerId, businessId=businessId, itemId=itemId, quantity=quantity)
+            db.session.add(cart_item)
+    elif quantity == 0:
+        # 如果数量为0，删除购物车项
+        if cart_item:
+            db.session.delete(cart_item)
 
-    change = (quantity - oldQuantity) * price
-    order = Orders.query.get(orderId)
-    order.totalPrice += change
+    try:
+        db.session.commit()
+        print("ok")
 
-    db.session.commit()
+        return jsonify({'message': '操作成功'}), 200
+    except Exception as e:
+        db.session.rollback()
+        print("error")
 
-    return jsonify("item quantity changed successfully")
+        return jsonify({'message': f'操作失败: {str(e)}'}), 500
+
+@customer.route('/customer/getCartList', methods=['GET'])
+def getCartList():
+    customerId = request.args.get('customerId', type=int)
+
+    # 验证输入
+    if customerId is None:
+        return jsonify({'message': 'Missing or invalid customerId'}), 400
+
+    # 查询购物车列表
+    cart_list = Cart.query.filter_by(customerId=customerId).all()
+
+    # 构建返回数据
+    business_dict = {}
+    for cart_item in cart_list:
+        item = Item.query.get(cart_item.itemId)
+        business = User.query.get(cart_item.businessId)
+
+        if business.userId not in business_dict:
+            business_dict[business.userId] = {
+                'businessId': business.userId,
+                'businessName': business.shopName,
+                'cartItems': []
+            }
+
+        business_dict[business.userId]['cartItems'].append({
+            'cartId': cart_item.cartId,
+            'itemId': cart_item.itemId,
+            'itemName': item.itemName if item else None,
+            'itemDescription': item.description if item else None,
+            'itemPrice': item.price if item else None,
+            'quantity': cart_item.quantity,
+        })
+
+    # 将字典转换为列表以保持一致性
+    result = list(business_dict.values())
+
+    return jsonify(result), 200
+
+@customer.route('/customer/getCartListByBusinessId', methods=['GET'])
+def getCartListByBusinessId():
+    customerId = request.args.get('customerId', type=int)
+    businessId = request.args.get('businessId', type=int)
+
+    # 验证输入
+    if customerId is None or businessId is None:
+        return jsonify({'message': 'Missing or invalid customerId or businessId'}), 400
+
+    # 查询购物车列表
+    cart_list = Cart.query.filter_by(customerId=customerId,businessId=businessId).all()
+
+    # 构建返回数据
+    cart_items = []
+    for cart_item in cart_list:
+        item = Item.query.get(cart_item.itemId)
+        business = User.query.get(cart_item.businessId)
+
+        cart_items.append({
+            'cartId': cart_item.cartId,
+            'itemId': cart_item.itemId,
+            'itemName': item.itemName if item else None,
+            'avatar': item.avatar if item else None,
+            'itemDescription': item.description if item else None,
+            'itemPrice': item.price if item else None,
+            'quantity': cart_item.quantity,
+            'businessId': cart_item.businessId,
+            'businessName': business.shopName if business else None,
+        })
+
+    return jsonify({'cartItems': cart_items}), 200
+
+
 
 
 @customer.route('/customer/getOrderList', methods=['GET'])
@@ -135,16 +221,65 @@ def getOrderDetail():
     return jsonify(orderDetail=items, order=order_dict)
 
 
+# @customer.route('/customer/pay', methods=['POST'])
+# def pay():
+#     orderId = request.form.get('orderId', type=int)
+#     order = Orders.query.get(orderId)
+#     if order:
+#         order.customerStatus = 1
+#         db.session.commit()
+#         return jsonify("pay successfully")
+#     return jsonify({"error": "Order not found"}), 404
+
 @customer.route('/customer/pay', methods=['POST'])
 def pay():
-    orderId = request.form.get('orderId', type=int)
-    order = Orders.query.get(orderId)
-    if order:
-        order.customerStatus = 1
-        db.session.commit()
-        return jsonify("pay successfully")
-    return jsonify({"error": "Order not found"}), 404
+    data = request.get_json()
+    customerId = data.get('customerId')
+    businessId = data.get('businessId')
 
+    if customerId is None or businessId is None:
+        return jsonify({'success': False, 'message': 'Missing or invalid input'}), 400
+
+    try:
+        # 查询购物车中的项
+        cart_items = Cart.query.filter_by(customerId=customerId, businessId=businessId).all()
+
+        if not cart_items:
+            return jsonify({'success': False, 'message': '购物车为空'}), 400
+
+        # 计算总价
+        total_price = sum(item.item.price * item.quantity for item in cart_items)
+
+        # 创建订单
+        new_order = Orders(
+            customerId=customerId,
+            businessId=businessId,
+            totalPrice=total_price,
+            customerStatus=1,  # 标记为已支付
+            businessStatus=0
+        )
+        db.session.add(new_order)
+        db.session.flush()  # 获取新订单的 orderId
+
+        # 创建订单明细
+        for cart_item in cart_items:
+            order_detail = OrderDetail(
+                orderId=new_order.orderId,
+                itemId=cart_item.itemId,
+                quantity=cart_item.quantity
+            )
+            db.session.add(order_detail)
+
+        # 清空购物车
+        for cart_item in cart_items:
+            db.session.delete(cart_item)
+
+        db.session.commit()
+        return jsonify({'success': True, 'message': '支付成功，订单已创建'}), 200
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error: {str(e)}")
+        return jsonify({'success': False, 'message': f'支付失败: {str(e)}'}), 500
 
 @customer.route('/customer/cancel', methods=['POST'])
 def cancel():

@@ -1,7 +1,8 @@
 from flask import Blueprint, jsonify, request
 from werkzeug.security import check_password_hash, generate_password_hash
+from datetime import datetime
 
-from models import db, Item, OrderDetail, Orders, User, Cart
+from models import db, Item, OrderDetail, Orders, User, Cart, Comment
 
 customer = Blueprint('customer', __name__)
 
@@ -100,17 +101,25 @@ def getCartList():
             business_dict[business.userId] = {
                 'businessId': business.userId,
                 'businessName': business.shopName,
-                'cartItems': []
+                'cartItems': [],
+                'totalPrice': 0.0  # 初始化总价
             }
+
+        item_price = item.price if item else 0
+        item_total_price = item_price * cart_item.quantity
 
         business_dict[business.userId]['cartItems'].append({
             'cartId': cart_item.cartId,
             'itemId': cart_item.itemId,
             'itemName': item.itemName if item else None,
             'itemDescription': item.description if item else None,
-            'itemPrice': item.price if item else None,
+            'itemPrice': item_price,
             'quantity': cart_item.quantity,
+            'itemTotalPrice': item_total_price  # 添加每个商品的总价
         })
+
+        # 累加每个商品的总价到商家的总价
+        business_dict[business.userId]['totalPrice'] += item_total_price
 
     # 将字典转换为列表以保持一致性
     result = list(business_dict.values())
@@ -169,6 +178,7 @@ def getOrderList():
         # 构建订单的详细信息字典
         order_dict = {
             "orderId": order.orderId,
+            "businessId":order.businessId,
             "shopName": order.business.shopName,
             "totalPrice": order.totalPrice,
             "customerStatus": order.customerStatus,
@@ -326,3 +336,112 @@ def updatePassword():
         db.session.commit()
         return jsonify("update successfully")
     return jsonify({'error': '旧密码不正确或用户不存在'}), 400
+
+
+@customer.route('/customer/comment', methods=['POST'])
+def comment():
+    try:
+        data = request.form
+        business_id = data.get('businessId')
+        customer_id = data.get('customerId')
+        order_id = data.get('orderId')
+        star = data.get('star')
+        description = data.get('description')
+
+        # 检查所有字段是否存在
+        if not all([business_id, customer_id, order_id, star, description]):
+            return jsonify({'message': '请填写完整的表单信息'}), 400
+
+        # 验证star是否在1到5之间
+        rating = int(star)
+        if rating < 1 or rating > 5:
+            return jsonify({'message': '星级必须在1到5之间'}), 400
+
+        # 创建并保存新评论
+        new_comment = Comment(
+            businessId=business_id,
+            customerId=customer_id,
+            orderId=order_id,
+            description=description,
+            star=star,
+            timestamp=datetime.utcnow()
+        )
+
+        db.session.add(new_comment)
+
+        # 更新订单的customerStatus为4 (已评价)
+        order = Orders.query.get(order_id)
+        if order:
+            order.customerStatus = 4
+            db.session.commit()
+        else:
+            db.session.rollback()
+            return jsonify({'message': '订单不存在'}), 404
+
+        return jsonify({'message': '评价成功'}), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'message': '服务器错误', 'error': str(e)}), 500
+
+@customer.route('/customer/getCommentByOrderId', methods=['GET'])
+def getCommentByOrderId():
+    try:
+        data = request.args
+        order_id = data.get('orderId')
+
+        # 查询指定订单的唯一评论信息
+        comment = Comment.query.filter_by(orderId=order_id).first()
+
+        if not comment:
+            return jsonify({'message': '未找到指定订单的评价信息'}), 404
+
+        # 构造返回的评价信息
+        comment_item = {
+            'commentId': comment.commentId,
+            'customerId': comment.customerId,
+            'businessId': comment.businessId,
+            'description': comment.description,
+            'star': comment.star,
+            'timestamp': comment.timestamp.strftime('%Y-%m-%d %H:%M:%S')
+        }
+
+        return jsonify({'comment': comment_item}), 200
+
+    except Exception as e:
+        return jsonify({'message': '服务器错误', 'error': str(e)}), 500
+
+
+@customer.route('/customer/getCommentsByBusinessId', methods=['GET'])
+def getCommentsByBusinessId():
+    try:
+        data = request.args
+        business_id = data.get('businessId')
+
+        # 验证输入
+        if business_id is None:
+            return jsonify({'message': 'Missing or invalid businessId'}), 400
+
+        # 查询指定商家的所有评论信息
+        comments = Comment.query.filter_by(businessId=business_id).all()
+
+        if not comments:
+            return jsonify({'message': '未找到指定商家的评价信息'}), 404
+
+        # 构造返回的评价信息列表
+        comment_list = []
+        for comment in comments:
+            comment_item = {
+                'commentId': comment.commentId,
+                'customerId': comment.customerId,
+                'businessId': comment.businessId,
+                'description': comment.description,
+                'star': comment.star,
+                'timestamp': comment.timestamp.strftime('%Y-%m-%d %H:%M:%S')
+            }
+            comment_list.append(comment_item)
+
+        return jsonify({'comments': comment_list}), 200
+
+    except Exception as e:
+        return jsonify({'message': '服务器错误', 'error': str(e)}), 500

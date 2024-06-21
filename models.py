@@ -91,4 +91,11 @@ class Comment(db.Model):
     # Relationship with Users (as a business)
     business = db.relationship('User', foreign_keys=[businessId], backref=db.backref('business_comments', lazy=True))
 
+class Collect(db.Model):
+    __tablename__ = 'collect'
+    collectId = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    userId = db.Column(db.Integer, db.ForeignKey('user.userId'), nullable=False)
+    itemId = db.Column(db.Integer, db.ForeignKey('item.itemId'), nullable=False)
+
+
 

@@ -5,12 +5,17 @@ from customer import customer
 from login import login
 from register import register
 from AI import AI
+from models import Collect
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:hjdhjd@47.108.105.205/market'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
+
+# with app.app_context():
+#     # 单独创建Collect表
+#     Collect.__table__.create(db.engine)
 
 app.register_blueprint(business)
 app.register_blueprint(customer)

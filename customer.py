@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request
 from werkzeug.security import check_password_hash, generate_password_hash
 from datetime import datetime
 
-from models import db, Item, OrderDetail, Orders, User, Cart, Comment
+from models import db, Item, OrderDetail, Orders, User, Cart, Comment, Collect
 
 customer = Blueprint('customer', __name__)
 
@@ -445,3 +445,41 @@ def getCommentsByBusinessId():
 
     except Exception as e:
         return jsonify({'message': '服务器错误', 'error': str(e)}), 500
+
+@customer.route('/customer/collect', methods=['POST'])
+def collect():
+    data = request.get_json()
+    user_id = data.get('userId')
+    item_id = data.get('itemId')
+    print(user_id)
+    print(item_id)
+    if not user_id or not item_id:
+        return jsonify({'error': 'Missing userId or itemId'}), 400
+
+    collect = Collect.query.filter_by(userId=user_id, itemId=item_id).first()
+    if collect:
+        db.session.delete(collect)
+        db.session.commit()
+        return jsonify({'message': 'Item removed from collection','isCollected': 'false'}), 200
+    else:
+        new_collect = Collect(userId=user_id, itemId=item_id)
+        db.session.add(new_collect)
+        db.session.commit()
+        return jsonify({'message': 'Item added to collection','isCollected': 'true'}), 201
+
+@customer.route('/customer/myCollect', methods=['Get'])
+def myCollect():
+    user_id = request.args.get('userId')
+    print(user_id)
+    favorite_items = Collect.query.filter_by(userId=user_id).all()
+    favorite_item_ids = [item.itemId for item in favorite_items]
+    items = Item.query.filter(Item.itemId.in_(favorite_item_ids)).all()
+    items_data = [{
+        'itemId': item.itemId,
+        'itemName': item.itemName,
+        'description': item.description,
+        'price': item.price,
+        'avatar': item.avatar
+    } for item in items]
+    return jsonify(items_data)
+

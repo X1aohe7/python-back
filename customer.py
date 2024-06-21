@@ -187,14 +187,14 @@ def getOrderList():
         }
 
         # 遍历订单的详细信息并添加到订单字典中
-        for detail in order_details:
-            item = Item.query.get(detail.itemId)
-            order_detail_dict = {
-                "itemId": item.itemId,
-                "itemName": item.itemName,
-                "quantity": detail.quantity,
-                "price": item.price
-            }
+        # for detail in order_details:
+        #     item = Item.query.get(detail.itemId)
+        #     order_detail_dict = {
+        #         "itemId": item.itemId,
+        #         "itemName": item.itemName,
+        #         "quantity": detail.quantity,
+        #         "price": item.price
+        #     }
             # order_dict["orderDetails"].append(order_detail_dict)
 
         # 将订单字典添加到订单列表中
@@ -306,7 +306,7 @@ def cancel():
 def searchBusiness():
     key = request.args.get('key', type=str)
     shops = User.query.filter(User.userType == 1, User.shopName.like(f"%{key}%")).all()
-    res = [{"userId": shop.userId, "shopName": shop.shopName} for shop in shops]
+    res = [{"userId": shop.userId, "shopName": shop.shopName,"avatar": shop.avatar} for shop in shops]
     return jsonify(res)
 
 

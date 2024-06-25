@@ -364,7 +364,7 @@ def comment():
             orderId=order_id,
             description=description,
             star=star,
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now()
         )
 
         db.session.add(new_comment)
